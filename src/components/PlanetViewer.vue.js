@@ -86,9 +86,9 @@ export default defineComponent({
                     // 創建地球主體
                     const earthMaterial = new THREE.MeshPhongMaterial({
                         map: loadTexture(planetData.textureUrl),
-                        bumpMap: loadTexture('/assets/planets/earthbump.jpg'),
+                        bumpMap: loadTexture('./assets/planets/earthbump.jpg'),
                         bumpScale: 0.3, // 增強凹凸效果
-                        specularMap: loadTexture('/assets/planets/earthspec.jpg'),
+                        specularMap: loadTexture('./assets/planets/earthspec.jpg'),
                         specular: new THREE.Color(0x333333),
                         shininess: 25,
                     });
@@ -96,10 +96,10 @@ export default defineComponent({
                     // 添加雲層 - 優化雲層設置
                     const cloudGeometry = new THREE.SphereGeometry(planetData.size * 1.02, 64, 64);
                     const cloudMaterial = new THREE.MeshPhongMaterial({
-                        map: loadTexture('/assets/planets/8k_earth_clouds.jpg'),
+                        map: loadTexture('./assets/planets/8k_earth_clouds.jpg'),
                         transparent: true,
                         opacity: 0.65, // 降低透明度，使雲層更加細緻
-                        alphaMap: loadTexture('/assets/planets/8k_earth_clouds.jpg'),
+                        alphaMap: loadTexture('./assets/planets/8k_earth_clouds.jpg'),
                         depthWrite: false, // 優化透明度渲染
                         blending: THREE.CustomBlending, // 使用自定義混合模式
                         blendSrc: THREE.SrcAlphaFactor,
@@ -141,19 +141,19 @@ export default defineComponent({
                     });
                     // 如果行星有特殊的凹凸紋理圖，加載它
                     if (planetData.name === "火星") {
-                        material.bumpMap = loadTexture('/assets/planets/marsbump.jpg');
+                        material.bumpMap = loadTexture('./assets/planets/marsbump.jpg');
                         material.bumpScale = 0.35; // 增強火星表面紋理
                     }
                     else if (planetData.name === "金星") {
-                        material.bumpMap = loadTexture('/assets/planets/venusbump.jpg');
+                        material.bumpMap = loadTexture('./assets/planets/venusbump.jpg');
                         material.bumpScale = 0.25;
                     }
                     else if (planetData.name === "水星") {
-                        material.bumpMap = loadTexture('/assets/planets/mercurybump.jpg');
+                        material.bumpMap = loadTexture('./assets/planets/mercurybump.jpg');
                         material.bumpScale = 0.22;
                     }
                     else if (planetData.name === "月球") {
-                        material.bumpMap = loadTexture('/assets/planets/moonbump.jpg');
+                        material.bumpMap = loadTexture('./assets/planets/moonbump.jpg');
                         material.bumpScale = 0.3;
                     }
                     // 添加氣體行星的特殊處理
@@ -671,7 +671,7 @@ export default defineComponent({
             // 添加天空盒
             const starsGeometry = new THREE.SphereGeometry(800, 64, 64);
             const starsMaterial = new THREE.MeshBasicMaterial({
-                map: new THREE.TextureLoader().load('/assets/planets/8k_stars_milky_way.jpg'),
+                map: new THREE.TextureLoader().load('./assets/planets/8k_stars_milky_way.jpg'),
                 side: THREE.BackSide
             });
             const starsMesh = new THREE.Mesh(starsGeometry, starsMaterial);

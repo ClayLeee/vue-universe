@@ -3,7 +3,7 @@ import type { Planet } from '../types/Planet';
 export const planets: Planet[] = [
   {
     name: "太陽",
-    textureUrl: "/assets/planets/8k_sun.jpg",
+    textureUrl: "./assets/planets/8k_sun.jpg",
     size: 20, // 太陽比例上應該更大，但為了適應介面做了縮小處理
     distance: 0, // 太陽位於中心
     rotationSpeed: 0.002,
@@ -19,7 +19,7 @@ export const planets: Planet[] = [
   },
   {
     name: "月球",
-    textureUrl: "/assets/planets/8k_moon.jpg",
+    textureUrl: "./assets/planets/8k_moon.jpg",
     size: 1.5,
     distance: 9.5, // 調整位置使其接近地球但不重疊
     rotationSpeed: 0.003,
@@ -35,7 +35,7 @@ export const planets: Planet[] = [
   },
   {
     name: "谷神星",
-    textureUrl: "/assets/planets/4k_ceres_fictional.jpg",
+    textureUrl: "./assets/planets/4k_ceres_fictional.jpg",
     size: 1.7,
     distance: 13, // 位於火星和木星之間的小行星帶
     rotationSpeed: 0.009,
@@ -51,7 +51,7 @@ export const planets: Planet[] = [
   },
   {
     name: "水星",
-    textureUrl: "/assets/planets/8k_mercury.jpg",
+    textureUrl: "./assets/planets/8k_mercury.jpg",
     size: 1.5,
     distance: 5,
     rotationSpeed: 0.01,
@@ -67,7 +67,7 @@ export const planets: Planet[] = [
   },
   {
     name: "金星",
-    textureUrl: "/assets/planets/8k_venus_surface.jpg",
+    textureUrl: "./assets/planets/8k_venus_surface.jpg",
     size: 2,
     distance: 7,
     rotationSpeed: 0.005,
@@ -83,7 +83,7 @@ export const planets: Planet[] = [
   },
   {
     name: "地球",
-    textureUrl: "/assets/planets/8k_earth_daymap.jpg",
+    textureUrl: "./assets/planets/8k_earth_daymap.jpg",
     // 由於缺少雲層紋理，將使用一般紋理
     color: 0x1a4d7c, // 備用顏色
     size: 2.2,
@@ -101,7 +101,7 @@ export const planets: Planet[] = [
   },
   {
     name: "火星",
-    textureUrl: "/assets/planets/8k_mars.jpg",
+    textureUrl: "./assets/planets/8k_mars.jpg",
     size: 1.8,
     distance: 11,
     rotationSpeed: 0.008,
@@ -117,7 +117,7 @@ export const planets: Planet[] = [
   },
   {
     name: "木星",
-    textureUrl: "/assets/planets/8k_jupiter.jpg",
+    textureUrl: "./assets/planets/8k_jupiter.jpg",
     size: 11.2,
     distance: 16,
     rotationSpeed: 0.02,
@@ -133,7 +133,7 @@ export const planets: Planet[] = [
   },
   {
     name: "土星",
-    textureUrl: "/assets/planets/8k_saturn.jpg",
+    textureUrl: "./assets/planets/8k_saturn.jpg",
     // 由於缺少環的紋理，將使用一般紋理
     color: 0xc3a992, // 備用顏色
     size: 9.45,
@@ -152,7 +152,7 @@ export const planets: Planet[] = [
   },
   {
     name: "天王星",
-    textureUrl: "/assets/planets/2k_uranus.jpg",
+    textureUrl: "./assets/planets/2k_uranus.jpg",
     size: 4.01,
     distance: 24,
     rotationSpeed: 0.015,
@@ -168,7 +168,7 @@ export const planets: Planet[] = [
   },
   {
     name: "海王星",
-    textureUrl: "/assets/planets/2k_neptune.jpg",
+    textureUrl: "./assets/planets/2k_neptune.jpg",
     size: 3.88,
     distance: 27,
     rotationSpeed: 0.017,
@@ -184,7 +184,7 @@ export const planets: Planet[] = [
   },
   {
     name: "妊神星",
-    textureUrl: "/assets/planets/4k_haumea_fictional.jpg",
+    textureUrl: "./assets/planets/4k_haumea_fictional.jpg",
     size: 1.6,
     distance: 30,
     rotationSpeed: 0.025,
@@ -200,7 +200,7 @@ export const planets: Planet[] = [
   },
   {
     name: "鳥神星",
-    textureUrl: "/assets/planets/4k_makemake_fictional.jpg",
+    textureUrl: "./assets/planets/4k_makemake_fictional.jpg",
     size: 1.8,
     distance: 33,
     rotationSpeed: 0.015,
@@ -216,7 +216,7 @@ export const planets: Planet[] = [
   },
   {
     name: "鬩神星",
-    textureUrl: "/assets/planets/4k_eris_fictional.jpg",
+    textureUrl: "./assets/planets/4k_eris_fictional.jpg",
     size: 2,
     distance: 36,
     rotationSpeed: 0.01,
