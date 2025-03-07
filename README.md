@@ -1,6 +1,4 @@
-# 太陽系行星互動可視化
-
-![太陽系行星可視化](preview.png)
+# 太陽系行星
 
 這是一個使用 Vue 3、TypeScript 和 Three.js 開發的互動式太陽系行星可視化應用。用戶可以探索太陽系中的行星，查看其詳細信息，並觀察行星的自轉和紋理。
 
@@ -34,6 +32,15 @@
 - **土星**：可見的環系統
 - **木星**：表面條紋和風暴特徵
 - **其他行星**：各具特色的紋理和表面細節
+
+## 圖片來源
+
+本項目使用的行星紋理圖片來自 [Solar System Scope](https://www.solarsystemscope.com/textures/)。這些紋理基於 NASA 高程和影像數據，由 Messenger、Viking 和 Cassini 太空船以及哈勃太空望遠鏡拍攝的真實照片調整而成。
+
+提供的紋理在 Attribution 4.0 International license 下分發：
+- 可用於任何目的，包括商業用途
+- 可以修改和分享這些紋理
+- 需要註明原始來源
 
 ## 如何使用
 
