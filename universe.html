@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D宇宙行星介紹</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: "微軟正黑體", Arial, sans-serif;
+            color: #fff;
+            background-color: #000;
+        }
+
+        #canvas-container {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .planet-info-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            transform: translateY(100%);
+            transition: transform 0.5s ease;
+            z-index: 10;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .planet-info-panel.active {
+            transform: translateY(0);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .panel-header h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover {
+            color: #ff4757;
+        }
+
+        .planet-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .detail-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            transition: transform 0.3s, background 0.3s;
+        }
+
+        .detail-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .detail-card h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #ff9f43;
+        }
+
+        .detail-card p {
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .planet-desc {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .loading-screen {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 1s ease;
+        }
+
+        .loading-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #ff9f43;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-size: 20px;
+            letter-spacing: 2px;
+        }
+
+        .instructions {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            padding: 10px 20px;
+            border-radius: 30px;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            transition: opacity 0.5s;
+        }
+
+        .instructions.fade {
+            opacity: 0.2;
+        }
+
+        .instructions:hover {
+            opacity: 1;
+        }
+
+        .instructions span {
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 載入畫面 -->
+    <div class="loading-screen">
+        <div class="spinner"></div>
+        <div class="loading-text">載入宇宙中...</div>
+    </div>
+
+    <!-- 操作指南 -->
+    <div class="instructions">
+        <span>🖱️ 滾動滑鼠滾輪切換行星</span>
+        <span>|</span>
+        <span>👆 點擊行星查看詳情</span>
+        <span>|</span>
+        <span>🔄 拖動畫面旋轉視角</span>
+    </div>
+
+    <!-- Three.js 畫布容器 -->
+    <div id="canvas-container"></div>
+
+    <!-- 行星資訊面板 -->
+    <div class="planet-info-panel">
+        <div class="panel-header">
+            <h2 id="planet-name">行星名稱</h2>
+            <button class="close-btn">&times;</button>
+        </div>
+        <div class="planet-desc" id="planet-description">行星描述內容...</div>
+        <div class="planet-details" id="planet-details">
+            <!-- 行星詳細資訊將動態加入 -->
+        </div>
+    </div>
+
+    <!-- 引入Three.js庫 - 更換為較老版本以確保兼容性 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- 使用匹配的OrbitControls版本 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
+
+    <script>
+        // 行星資料
+        const planetsData = [
+            {
+                name: "水星",
+                color: 0xA9A9A9, // 灰色
+                size: 0.38,
+                distance: 5,
+                rotationSpeed: 0.01,
+                description: "水星是太陽系中最小且最接近太陽的行星，沒有衛星。它表面布滿隕石坑，因為沒有大氣層保護。水星的溫差非常大，白天可達430°C，夜間可降至-180°C。",
+                details: [
+                    { title: "直徑", content: "4,879.4 公里" },
+                    { title: "軌道週期", content: "88 天" },
+                    { title: "自轉週期", content: "58.6 天" },
+                    { title: "平均溫度", content: "167°C (−173°C 至 427°C)" },
+                    { title: "表面重力", content: "地球的 0.38 倍" },
+                    { title: "衛星數量", content: "0" }
+                ]
+            },
+            {
+                name: "金星",
+                color: 0xE6C8A0, // 淡黃色
+                size: 0.95,
+                distance: 7,
+                rotationSpeed: 0.005,
+                description: "金星是太陽系中第二顆行星，也被稱為「地球的孿生兄弟」，因為它的大小和密度與地球相似。然而，金星擁有濃密的二氧化碳大氣層，造成嚴重的溫室效應，使其表面溫度達到約465°C，高於水星。金星的自轉方向與其他行星相反。",
+                details: [
+                    { title: "直徑", content: "12,104 公里" },
+                    { title: "軌道週期", content: "225 天" },
+                    { title: "自轉週期", content: "243 天 (逆轉)" },
+                    { title: "平均溫度", content: "462°C" },
+                    { title: "表面重力", content: "地球的 0.9 倍" },
+                    { title: "衛星數量", content: "0" }
+                ]
+            },
+            {
+                name: "地球",
+                color: 0x2E8BC0, // 藍色
+                cloudColor: 0xFFFFFF, // 白色
+                size: 1,
+                distance: 9,
+                rotationSpeed: 0.01,
+                description: "地球是太陽系中第三顆行星，是目前已知唯一孕育和支持生命的天體。地球表面的71%被水覆蓋，其餘為陸地，有活躍的大氣層和磁場，能保護表面免受太陽輻射和微小隕石的侵害。地球有一個自然衛星——月球。",
+                details: [
+                    { title: "直徑", content: "12,742 公里" },
+                    { title: "軌道週期", content: "365.25 天" },
+                    { title: "自轉週期", content: "23.93 小時" },
+                    { title: "平均溫度", content: "15°C" },
+                    { title: "表面重力", content: "9.8 m/s²" },
+                    { title: "衛星數量", content: "1 (月球)" }
+                ]
+            },
+            {
+                name: "火星",
+                color: 0xC1440E, // 紅色
+                size: 0.53,
+                distance: 11,
+                rotationSpeed: 0.008,
+                description: "火星是太陽系中第四顆行星，因表面富含氧化鐵而呈現紅色，故有「紅色星球」之稱。火星有稀薄的大氣層，主要由二氧化碳組成。表面特徵包括撞擊坑、火山、山谷、沙漠和極地冰帽。科學家發現了液態水存在的證據，這使火星成為尋找地外生命的重點目標。",
+                details: [
+                    { title: "直徑", content: "6,779 公里" },
+                    { title: "軌道週期", content: "687 天" },
+                    { title: "自轉週期", content: "24.6 小時" },
+                    { title: "平均溫度", content: "-65°C" },
+                    { title: "表面重力", content: "地球的 0.38 倍" },
+                    { title: "衛星數量", content: "2 (火衛一、火衛二)" }
+                ]
+            },
+            {
+                name: "木星",
+                color: 0xE0A96D, // 淺棕色帶條紋
+                size: 11.2,
+                distance: 16,
+                rotationSpeed: 0.02,
+                description: "木星是太陽系中最大的行星，質量是地球的318倍。它是一個氣體巨行星，主要由氫和氦組成，沒有固體表面。木星最顯著的特徵是大紅斑，這是一個持續數百年的巨大風暴。木星至少有79顆衛星，其中最著名的是伽利略發現的四顆大衛星：木衛一、木衛二、木衛三和木衛四。",
+                details: [
+                    { title: "直徑", content: "139,820 公里" },
+                    { title: "軌道週期", content: "11.86 年" },
+                    { title: "自轉週期", content: "9.93 小時" },
+                    { title: "平均溫度", content: "-145°C (雲層頂部)" },
+                    { title: "表面重力", content: "地球的 2.4 倍" },
+                    { title: "衛星數量", content: "至少 79 顆" }
+                ]
+            },
+            {
+                name: "土星",
+                color: 0xF4D03F, // 黃色
+                ringColor: 0xF5CBA7, // 淺橙色
+                size: 9.45,
+                distance: 21,
+                rotationSpeed: 0.018,
+                description: "土星是太陽系中第二大行星，以其壯觀的環系統而聞名。這些環主要由冰粒、塵埃和岩石碎片組成，直徑超過27萬公里，但厚度僅為10-20米。土星是一個氣體巨行星，密度低於水。它有至少83顆已知衛星，最大的是土衛六，是太陽系中唯一一個擁有濃密大氣層的衛星。",
+                details: [
+                    { title: "直徑", content: "116,460 公里" },
+                    { title: "軌道週期", content: "29.46 年" },
+                    { title: "自轉週期", content: "10.7 小時" },
+                    { title: "平均溫度", content: "-178°C (雲層頂部)" },
+                    { title: "表面重力", content: "地球的 1.07 倍" },
+                    { title: "衛星數量", content: "至少 83 顆" },
+                    { title: "環系統", content: "寬度約 270,000 公里，厚度僅 10-20 米" }
+                ]
+            },
+            {
+                name: "天王星",
+                color: 0xAED6F1, // 淺藍色
+                size: 4.01,
+                distance: 24,
+                rotationSpeed: 0.015,
+                description: "天王星是太陽系中第七大行星，被分類為冰巨行星。它因其獨特的自轉軸而聞名，與其軌道平面幾乎垂直，使其看起來像是「側躺」著旋轉。天王星的大氣層主要由氫、氦和甲烷組成，甲烷氣體吸收紅光並反射藍綠色光，賦予其獨特的藍綠色外觀。天王星有13個已知的環和27顆已知的衛星。",
+                details: [
+                    { title: "直徑", content: "50,724 公里" },
+                    { title: "軌道週期", content: "84.01 年" },
+                    { title: "自轉週期", content: "17.24 小時" },
+                    { title: "平均溫度", content: "-197°C" },
+                    { title: "表面重力", content: "地球的 0.89 倍" },
+                    { title: "衛星數量", content: "27" }
+                ]
+            },
+            {
+                name: "海王星",
+                color: 0x3498DB, // 深藍色
+                size: 3.88,
+                distance: 27,
+                rotationSpeed: 0.017,
+                description: "海王星是太陽系中最遠的行星（自冥王星降格後），也是第八大行星。它與天王星一樣被分類為冰巨行星。海王星的大氣層富含甲烷，這使它呈現鮮豔的藍色。它有強烈的風暴系統，包括「大黑斑」，這是一個類似木星大紅斑的巨大風暴區。海王星有14顆已知的衛星，最大的是海衛一，佔海王星質量的99.5%。",
+                details: [
+                    { title: "直徑", content: "49,244 公里" },
+                    { title: "軌道週期", content: "164.8 年" },
+                    { title: "自轉週期", content: "16.11 小時" },
+                    { title: "平均溫度", content: "-201°C" },
+                    { title: "表面重力", content: "地球的 1.14 倍" },
+                    { title: "衛星數量", content: "14" }
+                ]
+            }
+        ];
+
+        // 全域變數
+        let scene, camera, renderer, controls;
+        let planets = [], currentPlanetIndex = 0;
+        let planetGroup, starsGeometry, starsMaterial, stars;
+        let isLoading = true, isTransitioning = false;
+
+        // 初始化場景
+        function init() {
+            // 創建場景
+            scene = new THREE.Scene();
+
+            // 創建相機
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 15;
+
+            // 創建渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // 添加軌道控制
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.rotateSpeed = 0.5;
+            controls.minDistance = 5;
+            controls.maxDistance = 50;
+            controls.enablePan = false;
+
+            // 創建燈光
+            const ambientLight = new THREE.AmbientLight(0x333333);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.PointLight(0xffffff, 1.5);
+            sunLight.position.set(-30, 0, 0);
+            scene.add(sunLight);
+
+            // 創建星空背景
+            createStars();
+
+            // 創建行星組
+            planetGroup = new THREE.Group();
+            scene.add(planetGroup);
+
+            // 創建行星
+            createPlanets();
+
+            // 添加窗口調整大小事件
+            window.addEventListener('resize', onWindowResize);
+
+            // 添加滾輪事件
+            window.addEventListener('wheel', onWheel);
+
+            // 添加點擊事件
+            renderer.domElement.addEventListener('click', onCanvasClick);
+
+            // 面板關閉按鈕事件
+            document.querySelector('.close-btn').addEventListener('click', function() {
+                document.querySelector('.planet-info-panel').classList.remove('active');
+            });
+
+            // 啟動動畫循環
+            animate();
+
+            // 設置初始行星位置
+            updatePlanetFocus(0, true);
+
+            // 3秒後移除載入畫面
+            setTimeout(() => {
+                document.querySelector('.loading-screen').classList.add('fade-out');
+                isLoading = false;
+            }, 3000);
+
+            // 用戶交互10秒後淡化操作指南
+            setTimeout(() => {
+                document.querySelector('.instructions').classList.add('fade');
+            }, 10000);
+        }
+
+        // 創建星空背景
+        function createStars() {
+            starsGeometry = new THREE.BufferGeometry();
+            const starsCount = 5000;
+            const positions = new Float32Array(starsCount * 3);
+            const sizes = new Float32Array(starsCount);
+
+            for (let i = 0; i < starsCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 2000;
+                positions[i + 1] = (Math.random() - 0.5) * 2000;
+                positions[i + 2] = (Math.random() - 0.5) * 2000;
+                sizes[i / 3] = Math.random() * 2;
+            }
+
+            starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            starsGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            // 使用內建的白色圓點作為星星紋理
+            const starsMaterial = new THREE.PointsMaterial({
+                size: 1,
+                sizeAttenuation: true,
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8,
+                vertexColors: false
+            });
+
+            stars = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(stars);
+        }
+
+        // 創建所有行星
+        function createPlanets() {
+            planetsData.forEach((planetData, index) => {
+                // 創建行星幾何體
+                const geometry = new THREE.SphereGeometry(planetData.size, 64, 64);
+
+                // 如果是地球, 添加特殊效果
+                if (planetData.name === "地球" && planetData.cloudColor) {
+                    // 地球使用標準材質
+                    const material = new THREE.MeshStandardMaterial({
+                        color: planetData.color,
+                        roughness: 0.7,
+                        metalness: 0.1
+                    });
+
+                    // 創建行星網格
+                    const planet = new THREE.Mesh(geometry, material);
+
+                    // 添加雲層
+                    const cloudsGeometry = new THREE.SphereGeometry(planetData.size * 1.01, 64, 64);
+                    const cloudsMaterial = new THREE.MeshPhongMaterial({
+                        color: planetData.cloudColor,
+                        transparent: true,
+                        opacity: 0.3
+                    });
+                    const clouds = new THREE.Mesh(cloudsGeometry, cloudsMaterial);
+                    planet.add(clouds);
+
+                    // 設置行星位置
+                    const angle = (index / planetsData.length) * Math.PI * 2;
+                    planet.position.x = Math.cos(angle) * planetData.distance;
+                    planet.position.z = Math.sin(angle) * planetData.distance;
+
+                    // 添加到行星組和行星數組
+                    planetGroup.add(planet);
+                    planets.push({
+                        mesh: planet,
+                        data: planetData,
+                        angle: angle,
+                        clouds: clouds
+                    });
+                } else {
+                    // 其他行星使用標準材質
+                    const material = new THREE.MeshStandardMaterial({
+                        color: planetData.color,
+                        roughness: 0.7,
+                        metalness: 0.1
+                    });
+
+                    // 創建行星網格
+                    const planet = new THREE.Mesh(geometry, material);
+
+                    // 設置行星位置
+                    const angle = (index / planetsData.length) * Math.PI * 2;
+                    planet.position.x = Math.cos(angle) * planetData.distance;
+                    planet.position.z = Math.sin(angle) * planetData.distance;
+
+                    // 添加到行星組和行星數組
+                    planetGroup.add(planet);
+                    planets.push({
+                        mesh: planet,
+                        data: planetData,
+                        angle: angle
+                    });
+
+                    // 如果是土星, 添加環
+                    if (planetData.name === "土星" && planetData.ringColor) {
+                        const ringGeometry = new THREE.RingGeometry(planetData.size * 1.4, planetData.size * 2.2, 64);
+                        const ringMaterial = new THREE.MeshBasicMaterial({
+                            color: planetData.ringColor,
+                            side: THREE.DoubleSide,
+                            transparent: true,
+                            opacity: 0.7
+                        });
+
+                        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                        ring.rotation.x = Math.PI / 2;
+                        planet.add(ring);
+                    }
+                }
+            });
+        }
+
+        // 處理滾輪事件
+        function onWheel(event) {
+            if (isTransitioning) return;
+            isTransitioning = true;
+
+            // 隱藏行星資訊面板
+            document.querySelector('.planet-info-panel').classList.remove('active');
+
+            // 根據滾輪方向切換焦點行星
+            const delta = Math.sign(event.deltaY);
+            let newIndex = currentPlanetIndex + delta;
+
+            // 循環索引範圍
+            if (newIndex < 0) newIndex = planets.length - 1;
+            if (newIndex >= planets.length) newIndex = 0;
+
+            // 更新焦點行星
+            updatePlanetFocus(newIndex);
+        }
+
+        // 更新焦點行星
+        function updatePlanetFocus(index, instant = false) {
+            currentPlanetIndex = index;
+            const planet = planets[index];
+
+            // 相機目標位置 (調整為較好的觀察角度)
+            const targetPosition = {
+                x: planet.mesh.position.x * 0.6,
+                y: planet.mesh.position.y * 0.3,
+                z: planet.mesh.position.z * 0.6
+            };
+
+            // 更新控制中心
+            controls.target.copy(planet.mesh.position);
+
+            // 使用GSAP製作平滑過渡
+            const duration = instant ? 0 : 1.5;
+
+            gsap.to(camera.position, {
+                x: targetPosition.x,
+                y: targetPosition.y,
+                z: targetPosition.z,
+                duration: duration,
+                ease: "power2.inOut",
+                onComplete: function() {
+                    isTransitioning = false;
+                }
+            });
+        }
+
+        // 處理畫布點擊事件
+        function onCanvasClick(event) {
+            event.preventDefault();
+
+            // 計算滑鼠位置
+            const mouse = new THREE.Vector2();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // 創建射線
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            // 檢測交叉點
+            const intersects = raycaster.intersectObjects(planetGroup.children, true);
+
+            if (intersects.length > 0) {
+                // 找到點擊的行星
+                let clickedPlanet = null;
+                let clickedObject = intersects[0].object;
+
+                // 處理點擊環的情況
+                if (clickedObject.parent && clickedObject.parent !== planetGroup) {
+                    clickedObject = clickedObject.parent;
+                }
+
+                // 尋找對應的行星數據
+                for (let i = 0; i < planets.length; i++) {
+                    if (planets[i].mesh === clickedObject) {
+                        clickedPlanet = planets[i];
+                        break;
+                    }
+                }
+
+                if (clickedPlanet) {
+                    // 顯示行星資訊
+                    showPlanetInfo(clickedPlanet.data);
+                }
+            }
+        }
+
+        // 顯示行星資訊
+        function showPlanetInfo(planetData) {
+            // 更新面板內容
+            document.getElementById('planet-name').textContent = planetData.name;
+            document.getElementById('planet-description').textContent = planetData.description;
+
+            // 清空並重新填充詳細信息
+            const detailsContainer = document.getElementById('planet-details');
+            detailsContainer.innerHTML = '';
+
+            // 添加每個詳細資訊卡片
+            planetData.details.forEach(detail => {
+                const card = document.createElement('div');
+                card.className = 'detail-card';
+
+                const title = document.createElement('h3');
+                title.textContent = detail.title;
+
+                const content = document.createElement('p');
+                content.textContent = detail.content;
+
+                card.appendChild(title);
+                card.appendChild(content);
+                detailsContainer.appendChild(card);
+            });
+
+            // 顯示面板
+            document.querySelector('.planet-info-panel').classList.add('active');
+        }
+
+        // 處理窗口大小調整
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // 動畫循環
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 旋轉行星
+            planets.forEach(planet => {
+                planet.mesh.rotation.y += planet.data.rotationSpeed / 5;
+
+                // 如果是地球，額外旋轉雲層
+                if (planet.clouds) {
+                    planet.clouds.rotation.y += planet.data.rotationSpeed / 8;
+                }
+            });
+
+            // 慢慢旋轉星空
+            if (stars) {
+                stars.rotation.y += 0.0002;
+            }
+
+            // 更新控制器
+            controls.update();
+
+            // 渲染場景
+            renderer.render(scene, camera);
+        }
+
+        // 當頁面載入完成後初始化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
