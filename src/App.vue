@@ -13,6 +13,9 @@
       :shouldAnimate="shouldAnimatePanel"
       @close="isPlanetInfoVisible = false"
     />
+    <div class="attribution">
+      行星紋理來源: <a href="https://www.solarsystemscope.com/textures/" target="_blank">Solar System Scope</a>
+    </div>
   </div>
 </template>
 
@@ -108,5 +111,29 @@ body {
 
 .fade {
   opacity: 0.2;
+}
+
+.attribution {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 5px 10px;
+  border-radius: 4px;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.attribution a {
+  color: rgba(120, 200, 255, 0.8);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.attribution a:hover {
+  color: rgba(150, 220, 255, 1);
+  text-decoration: underline;
 }
 </style>
