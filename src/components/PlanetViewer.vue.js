@@ -337,10 +337,8 @@ export default defineComponent({
         // 驗證框線是否存在的輔助函數
         const verifyFrameExists = (planetMesh) => {
             const frame = planetMesh.getObjectByName("sci-fi-frame");
-            console.log(`框線驗證: ${!!frame}`);
             // 如果框線不存在，重新添加
             if (!frame) {
-                console.log("發現框線缺失，重新添加框線");
                 removeAllFrames(planetMesh);
                 addSciFiFrame(planetMesh, planetMesh.geometry.parameters.radius || 1);
             }
@@ -436,12 +434,10 @@ export default defineComponent({
                     if (isZoomedIn.value) {
                         // 放大模式時，隱藏介紹區塊
                         emit('toggle-info-panel', false);
-                        console.log('進入放大模式：暫時隱藏介紹區塊');
                     }
                     else {
                         // 退出放大模式時，顯示介紹區塊
                         emit('toggle-info-panel', true);
-                        console.log('退出放大模式：重新顯示介紹區塊');
                     }
                     // 獲取原始放大比例（標準聚焦大小）
                     const originalScale = clickedPlanet.mesh.scale.x;
@@ -496,7 +492,6 @@ export default defineComponent({
             emit('toggle-info-panel', false);
             // 如果之前有選中的星球，恢復其原始大小並移除框線
             if (selectedPlanet && selectedPlanet !== clickedPlanet) {
-                console.log(`移除星球 ${selectedPlanet.data.name} 的框線`);
                 // 恢復原始大小
                 const originalScale = originalScales[selectedPlanet.data.name] || 1;
                 selectedPlanet.mesh.scale.set(originalScale, originalScale, originalScale);
@@ -505,7 +500,6 @@ export default defineComponent({
             }
             // 設置新的選中星球
             selectedPlanet = clickedPlanet;
-            console.log(`通過點擊聚焦星球: ${clickedPlanet.data.name}`);
             // 計算需要的縮放倍數以達到標準聚焦大小
             const originalSize = clickedPlanet.data.size;
             const requiredScale = standardFocusSize / originalSize;
@@ -557,7 +551,6 @@ export default defineComponent({
             setTimeout(() => { isScrolling = false; }, 300);
             // 如果之前有選中的星球，恢復其原始大小並移除框線
             if (selectedPlanet) {
-                console.log(`移除星球 ${selectedPlanet.data.name} 的框線`);
                 // 恢復原始大小
                 const originalScale = originalScales[selectedPlanet.data.name] || 1;
                 selectedPlanet.mesh.scale.set(originalScale, originalScale, originalScale);
@@ -585,7 +578,6 @@ export default defineComponent({
             }
             // 獲取調整後的行星
             const adjustedPlanet = planetObjects[currentFocusIndex];
-            console.log(`通過滾輪聚焦星球: ${adjustedPlanet.data.name}`);
             // 計算需要的縮放倍數以達到標準聚焦大小
             const originalSize = adjustedPlanet.data.size;
             const requiredScale = standardFocusSize / originalSize;
@@ -842,8 +834,8 @@ debugger; /* PartiallyEnd: #3632/script.vue */
 const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
-// CSS variable injection 
-// CSS variable injection end 
+// CSS variable injection
+// CSS variable injection end
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(Object.assign({ class: "planet-container" }, { ref: "container" }));
 /** @type {typeof __VLS_ctx.container} */ ;
 /** @type {__VLS_StyleScopedClasses['planet-container']} */ ;
