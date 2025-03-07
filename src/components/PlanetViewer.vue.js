@@ -220,6 +220,11 @@ export default defineComponent({
         };
         // 動畫相機移動到目標位置
         const animateCameraToTarget = (targetPosition, closeUp = false, finalView = false) => {
+            // 確保目標位置是有效的 Vector3
+            if (!targetPosition || typeof targetPosition.x !== 'number') {
+                console.error('無效的目標位置:', targetPosition);
+                return; // 如果目標位置無效，直接返回，不執行動畫
+            }
             // 計算目標相機位置 - 在行星上方偏移一定距離
             const offset = finalView
                 ? new THREE.Vector3(45, 30, 45) // 調整為更適合新星球大小的視角
@@ -240,92 +245,108 @@ export default defineComponent({
                 cancelAnimationFrame(globalCameraAnimation);
                 globalCameraAnimation = null;
             }
-            // 創建路徑點，平滑曲線用
-            const controlPoints = [];
-            // 主路徑點 - 起點、中點和終點
-            controlPoints.push(startPosition.clone());
-            // 添加兩個控制點形成更平滑的曲線
-            const dist = startPosition.distanceTo(targetCameraPosition);
-            // 調整曲線程度，根據finalView參數
-            const curveHeight = finalView ? dist * 0.08 : dist * 0.12;
-            const midPoint1 = new THREE.Vector3().lerpVectors(startPosition, targetCameraPosition, 0.3);
-            midPoint1.y += curveHeight; // 較小的上升弧度
-            const midPoint2 = new THREE.Vector3().lerpVectors(startPosition, targetCameraPosition, 0.7);
-            midPoint2.y += curveHeight * 0.6; // 較小的上升弧度
-            // 路徑控制點
-            controlPoints.push(midPoint1);
-            controlPoints.push(midPoint2);
-            controlPoints.push(targetCameraPosition.clone());
-            // 創建三維樣條曲線，提供更平滑的路徑插值
-            const curve = new THREE.CatmullRomCurve3(controlPoints);
-            curve.tension = 0.1; // 較低的張力使曲線更加平滑
-            // 優化的飛船加速函數 - 調整為最適合單次動畫的曲線
-            const rocketAcceleration = (t) => {
-                if (finalView) {
-                    // 點擊或第二階段動畫：平滑加速
-                    return t < 0.6
-                        ? 0.6 * Math.pow(t / 0.6, 2) // 前60%：二次方加速
-                        : 0.6 + 0.4 * (1 - Math.pow(1 - (t - 0.6) / 0.4, 2)); // 後40%：平滑減速
-                }
-                else {
-                    // 滾輪第一階段：更快速加速
-                    return t < 0.4
-                        ? 0.7 * Math.pow(t / 0.4, 1.5) // 前40%：快速加速
-                        : 0.7 + 0.3 * (1 - Math.pow(1 - (t - 0.4) / 0.6, 2)); // 後60%：緩慢減速
-                }
-            };
-            // 基於時間的動畫函數
-            const animate = (currentTime) => {
-                // 計算經過的時間和進度百分比
-                const elapsedTime = currentTime - startTime;
-                let progress = Math.min(elapsedTime / totalDuration, 1.0);
-                if (progress < 1.0) {
-                    // 使用加速曲線計算實際進度
-                    const easedProgress = rocketAcceleration(progress);
-                    // 使用樣條曲線獲取當前位置 - 更平滑的路徑
-                    const curvePoint = curve.getPoint(easedProgress);
-                    camera.position.copy(curvePoint);
-                    // 平滑更新相機目標
-                    controls.target.lerpVectors(startLookAt, targetPosition, easedProgress);
-                    // 添加平滑的相機晃動效果，但僅在加速階段
-                    if (progress > 0.2 && progress < 0.8) {
-                        // 使用正弦函數創建平滑的抖動，頻率隨速度增加而增加
-                        // 針對不同類型的移動調整參數
-                        const frequency = finalView ? 12 : 18; // 點擊動畫震動頻率較低
-                        const amplitude = finalView
-                            ? 0.0006 * Math.sin(progress * 20) // 點擊動畫震幅較小
-                            : 0.0009 * Math.sin(progress * 25); // 滾輪動畫震幅稍大
-                        // 應用晃動效果到相機旋轉
-                        camera.rotation.z = startCameraRotation.z + amplitude * Math.sin(elapsedTime * 0.01 * frequency);
-                        camera.rotation.x = startCameraRotation.x + amplitude * 0.5 * Math.cos(elapsedTime * 0.01 * frequency);
+            try {
+                // 使用更簡單、更穩定的線性插值動畫
+                // 這種方法不使用複雜的曲線計算，避免了可能的錯誤
+                const animate = (currentTime) => {
+                    // 檢查動畫是否已被取消
+                    if (!globalCameraAnimation)
+                        return;
+                    // 計算經過的時間和進度百分比
+                    const elapsedTime = currentTime - startTime;
+                    let progress = Math.min(elapsedTime / totalDuration, 1.0);
+                    if (progress < 1.0) {
+                        try {
+                            // 使用加速曲線計算實際進度
+                            let easedProgress;
+                            if (finalView) {
+                                // 點擊或第二階段動畫：平滑加速
+                                easedProgress = progress < 0.6
+                                    ? 0.6 * Math.pow(progress / 0.6, 2) // 前60%：二次方加速
+                                    : 0.6 + 0.4 * (1 - Math.pow(1 - (progress - 0.6) / 0.4, 2)); // 後40%：平滑減速
+                            }
+                            else {
+                                // 滾輪第一階段：更快速加速
+                                easedProgress = progress < 0.4
+                                    ? 0.7 * Math.pow(progress / 0.4, 1.5) // 前40%：快速加速
+                                    : 0.7 + 0.3 * (1 - Math.pow(1 - (progress - 0.4) / 0.6, 2)); // 後60%：緩慢減速
+                            }
+                            // 使用簡單的線性插值計算當前位置
+                            // 這比使用複雜的曲線計算更穩定
+                            const newX = startPosition.x + (targetCameraPosition.x - startPosition.x) * easedProgress;
+                            const newY = startPosition.y + (targetCameraPosition.y - startPosition.y) * easedProgress;
+                            const newZ = startPosition.z + (targetCameraPosition.z - startPosition.z) * easedProgress;
+                            // 添加一個小的弧度效果，模擬曲線路徑
+                            const arcHeight = finalView ? 10 : 20;
+                            const arcEffect = Math.sin(easedProgress * Math.PI) * arcHeight;
+                            // 設置相機位置
+                            camera.position.set(newX, newY + arcEffect, newZ);
+                            // 平滑更新相機目標
+                            controls.target.lerpVectors(startLookAt, targetPosition, easedProgress);
+                            // 添加平滑的相機晃動效果，但僅在加速階段
+                            if (progress > 0.2 && progress < 0.8) {
+                                // 使用正弦函數創建平滑的抖動，頻率隨速度增加而增加
+                                // 針對不同類型的移動調整參數
+                                const frequency = finalView ? 12 : 18; // 點擊動畫震動頻率較低
+                                const amplitude = finalView
+                                    ? 0.0006 * Math.sin(progress * 20) // 點擊動畫震幅較小
+                                    : 0.0009 * Math.sin(progress * 25); // 滾輪動畫震幅稍大
+                                // 應用晃動效果到相機旋轉
+                                camera.rotation.z = startCameraRotation.z + amplitude * Math.sin(elapsedTime * 0.01 * frequency);
+                                camera.rotation.x = startCameraRotation.x + amplitude * 0.5 * Math.cos(elapsedTime * 0.01 * frequency);
+                            }
+                            else {
+                                // 平滑恢復相機原始旋轉
+                                camera.rotation.z = startCameraRotation.z;
+                                camera.rotation.x = startCameraRotation.x;
+                            }
+                            controls.update();
+                            // 繼續動畫
+                            globalCameraAnimation = requestAnimationFrame(animate);
+                        }
+                        catch (error) {
+                            console.error('動畫過程中發生錯誤:', error);
+                            // 發生錯誤時，直接跳到最終位置
+                            camera.position.copy(targetCameraPosition);
+                            controls.target.copy(targetPosition);
+                            camera.rotation.copy(startCameraRotation);
+                            controls.update();
+                            globalCameraAnimation = null;
+                        }
                     }
                     else {
-                        // 平滑恢復相機原始旋轉
-                        camera.rotation.z = startCameraRotation.z;
-                        camera.rotation.x = startCameraRotation.x;
+                        // 確保到達目標位置時精確定位
+                        camera.position.copy(targetCameraPosition);
+                        controls.target.copy(targetPosition);
+                        camera.rotation.copy(startCameraRotation);
+                        controls.update();
+                        globalCameraAnimation = null;
+                        // 如果是最終視角（第二階段動畫），且不處於放大模式，才顯示介紹區塊
+                        if (finalView && !isZoomedIn.value) {
+                            // 設置一個小延遲，讓相機完全停止後再顯示介紹區塊
+                            setTimeout(() => {
+                                emit('toggle-info-panel', true); // 顯示介紹區塊
+                            }, 150);
+                        }
                     }
-                    controls.update();
-                    // 繼續動畫
-                    globalCameraAnimation = requestAnimationFrame(animate);
+                };
+                // 啟動動畫循環
+                globalCameraAnimation = requestAnimationFrame(animate);
+            }
+            catch (error) {
+                console.error('創建相機動畫時發生錯誤:', error);
+                // 發生錯誤時，直接跳到最終位置
+                camera.position.copy(targetCameraPosition);
+                controls.target.copy(targetPosition);
+                camera.rotation.copy(startCameraRotation);
+                controls.update();
+                // 如果是最終視角，顯示介紹區塊
+                if (finalView && !isZoomedIn.value) {
+                    setTimeout(() => {
+                        emit('toggle-info-panel', true);
+                    }, 150);
                 }
-                else {
-                    // 確保到達目標位置時精確定位
-                    camera.position.copy(targetCameraPosition);
-                    controls.target.copy(targetPosition);
-                    camera.rotation.copy(startCameraRotation);
-                    controls.update();
-                    globalCameraAnimation = null;
-                    // 如果是最終視角（第二階段動畫），且不處於放大模式，才顯示介紹區塊
-                    if (finalView && !isZoomedIn.value) {
-                        // 設置一個小延遲，讓相機完全停止後再顯示介紹區塊
-                        setTimeout(() => {
-                            emit('toggle-info-panel', true); // 顯示介紹區塊
-                        }, 150);
-                    }
-                }
-            };
-            // 啟動動畫循環
-            globalCameraAnimation = requestAnimationFrame(animate);
+            }
         };
         // 移除所有光環的輔助函數 -> 改為移除框線效果
         const removeAllFrames = (planetMesh) => {
@@ -543,12 +564,12 @@ export default defineComponent({
             }
             // 立即隱藏介紹區塊
             emit('toggle-info-panel', false);
-            // 防止連續快速滾動導致切換太快
-            if (isScrolling)
+            // 移除滾動延遲，使切換更加流暢
+            // 添加滾輪靈敏度控制，減小每次滾動的影響
+            const wheelSensitivity = 20; // 數值越大，需要滾動越多才會切換星球
+            // 只有當滾輪事件足夠大時才觸發切換
+            if (Math.abs(event.deltaY) < wheelSensitivity)
                 return;
-            // 設置滾動標記，300ms內不再響應滾動
-            isScrolling = true;
-            setTimeout(() => { isScrolling = false; }, 300);
             // 如果之前有選中的星球，恢復其原始大小並移除框線
             if (selectedPlanet) {
                 // 恢復原始大小
@@ -834,8 +855,8 @@ debugger; /* PartiallyEnd: #3632/script.vue */
 const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
-// CSS variable injection
-// CSS variable injection end
+// CSS variable injection 
+// CSS variable injection end 
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(Object.assign({ class: "planet-container" }, { ref: "container" }));
 /** @type {typeof __VLS_ctx.container} */ ;
 /** @type {__VLS_StyleScopedClasses['planet-container']} */ ;
