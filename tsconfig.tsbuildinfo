@@ -1,0 +1,1 @@
+{"root":["./vite.config.ts","./src/app.vue","./src/main.ts","./src/components/instructions.vue","./src/components/loadingscreen.vue","./src/components/planetinfo.vue","./src/components/planetviewer.vue","./src/services/planetservice.ts","./src/types/planet.ts","./src/types/css.d.ts","./src/types/vue-shim.d.ts"],"version":"5.7.3"}
