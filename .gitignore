@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# IDE 生成的輔助檔案
+*.vue.js
+src/types/*.js
+*.js
